@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Thanh toán học phí - Trung tâm Sao Sáng</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <script src="config.js"></script>
+  <style>
+    body {
+      background: linear-gradient(135deg, #f0f4ff 0%, #e8f0fe 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: system-ui, -apple-system, sans-serif;
+      padding: 20px;
+    }
+
+    .payment-card {
+      background: white;
+      border-radius: 24px;
+      box-shadow: 0 20px 60px rgba(37, 99, 235, 0.15);
+      max-width: 480px;
+      width: 100%;
+      overflow: hidden;
+    }
+
+    .payment-header {
+      background: linear-gradient(135deg, #1e3a8a, #2563eb);
+      color: white;
+      padding: 28px 32px;
+      text-align: center;
+    }
+
+    .payment-header h4 { font-weight: 700; margin: 0; font-size: 1.3rem; }
+    .payment-header p { margin: 6px 0 0; opacity: 0.85; font-size: 0.9rem; }
+
+    .payment-body { padding: 32px; }
+
+    .info-box {
+      background: #f0f7ff;
+      border-radius: 14px;
+      padding: 18px 20px;
+      margin-bottom: 24px;
+      border-left: 4px solid #2563eb;
+    }
+    .info-box .label { font-size: 0.78rem; color: #6b7280; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+    .info-box .value { font-size: 1.05rem; font-weight: 700; color: #1e3a8a; margin-top: 2px; }
+    .info-box .amount { font-size: 1.6rem; font-weight: 800; color: #2563eb; }
+
+    .qr-wrapper {
+      text-align: center;
+      margin: 24px 0;
+    }
+
+    .qr-wrapper img {
+      width: 220px;
+      height: 220px;
+      border-radius: 16px;
+      border: 3px solid #e5edff;
+      object-fit: contain;
+      padding: 10px;
+      background: white;
+      box-shadow: 0 4px 20px rgba(37,99,235,0.1);
+    }
+
+    .qr-label {
+      margin-top: 10px;
+      font-size: 0.85rem;
+      color: #6b7280;
+    }
+
+    .noi-dung-box {
+      background: #fefce8;
+      border: 2px dashed #facc15;
+      border-radius: 14px;
+      padding: 16px 20px;
+      margin-bottom: 20px;
+      position: relative;
+    }
+    .noi-dung-box .nd-label { font-size: 0.78rem; color: #92400e; font-weight: 700; text-transform: uppercase; }
+    .noi-dung-box .nd-value { font-size: 1.05rem; font-weight: 700; color: #1c1917; margin-top: 4px; word-break: break-all; }
+
+    .copy-btn {
+      position: absolute;
+      top: 12px; right: 12px;
+      background: #fbbf24;
+      border: none;
+      border-radius: 8px;
+      padding: 4px 10px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      cursor: pointer;
+      color: #1c1917;
+      transition: background 0.2s;
+    }
+    .copy-btn:hover { background: #f59e0b; }
+    .copy-btn.copied { background: #22c55e; color: white; }
+
+    .btn-back {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #1e3a8a, #2563eb);
+      color: white;
+      border: none;
+      border-radius: 14px;
+      font-weight: 700;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .btn-back:hover { opacity: 0.9; }
+
+    .bank-info {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .bank-chip {
+      background: #f3f4f6;
+      border-radius: 10px;
+      padding: 8px 14px;
+      flex: 1;
+      text-align: center;
+    }
+    .bank-chip .bc-label { font-size: 0.72rem; color: #9ca3af; font-weight: 600; }
+    .bank-chip .bc-value { font-size: 0.9rem; font-weight: 700; color: #111827; margin-top: 2px; }
+
+    .step-note {
+      font-size: 0.82rem;
+      color: #6b7280;
+      text-align: center;
+      margin-top: 16px;
+      line-height: 1.6;
+    }
+    @media (max-width: 480px) {
+      body { padding: 12px; align-items: flex-start; padding-top: 20px; }
+      .payment-card { border-radius: 16px; }
+      .payment-header { padding: 20px; }
+      .payment-body { padding: 20px; }
+      .bank-info { flex-direction: column; }
+      .qr-wrapper img { width: 180px; height: 180px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="payment-card">
+  <div class="payment-header">
+    <div style="font-size:2.2rem; margin-bottom:6px;">🏦</div>
+    <h4>Thanh toán học phí</h4>
+    <p>Trung tâm Sao Sáng</p>
+  </div>
+
+  <div class="payment-body">
+
+    <!-- Thông tin học phí -->
+    <div class="info-box">
+      <div class="label">Học viên</div>
+      <div class="value" id="tenHocVien">...</div>
+    </div>
+
+    <div class="info-box">
+      <div class="label">Lớp học</div>
+      <div class="value" id="tenLop">...</div>
+    </div>
+
+    <div class="info-box">
+      <div class="label">Số tiền cần thanh toán</div>
+      <div class="amount" id="soTien">...</div>
+    </div>
+
+    <!-- Thông tin ngân hàng -->
+    <div class="bank-info">
+      <div class="bank-chip">
+        <div class="bc-label">Ngân hàng</div>
+        <div class="bc-value">Vietcombank</div>
+      </div>
+      <div class="bank-chip">
+        <div class="bc-label">Số tài khoản</div>
+        <div class="bc-value">1049461502</div>
+      </div>
+      <div class="bank-chip">
+        <div class="bc-label">Chủ TK</div>
+        <div class="bc-value">NGUYEN CONG QUAN</div>
+      </div>
+    </div>
+
+    <!-- QR Code -->
+    <div class="qr-wrapper">
+      <img src="../picture/qr vietcombank.jpg" alt="QR chuyển khoản"
+           onerror="this.src='https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=placeholder'"
+           id="qrImg">
+      <div class="qr-label">Quét mã QR để thanh toán nhanh</div>
+    </div>
+
+    <!-- Nội dung chuyển khoản -->
+    <div class="noi-dung-box">
+      <div class="nd-label">Nội dung chuyển khoản</div>
+      <div class="nd-value" id="noiDung">...</div>
+      <button class="copy-btn" onclick="copyNoiDung(this)" id="copyBtn">Sao chép</button>
+    </div>
+
+    <button class="btn-back" onclick="goBack()">
+      ← Quay lại
+    </button>
+
+    <div class="step-note">
+      Sau khi chuyển khoản thành công, hệ thống sẽ được xác nhận<br>bởi nhân viên trong vòng 24 giờ làm việc.
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // Lấy thông tin từ URL params do hocvien.html truyền sang
+  const params = new URLSearchParams(window.location.search);
+
+  const tenHocVien = params.get("ten") || "Học viên";
+  const tenLop     = params.get("lop") || "---";
+  const soTien     = params.get("sotien") || "0";
+  const maLop      = params.get("malop") || "";
+  const maHV       = params.get("mahv") || "";
+
+  // Tạo nội dung chuyển khoản chuẩn
+  const noiDung = `HOCPHI ${tenHocVien} LOP ${tenLop}`.toUpperCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")  // bỏ dấu
+    .replace(/Đ/g, "D").replace(/đ/g, "D")
+    .replace(/[^A-Z0-9 ]/g, "").trim();
+
+  document.getElementById("tenHocVien").innerText = tenHocVien;
+  document.getElementById("tenLop").innerText = tenLop;
+  document.getElementById("soTien").innerText =
+    Number(soTien).toLocaleString("vi-VN") + " ₫";
+  document.getElementById("noiDung").innerText = noiDung;
+
+  function copyNoiDung(btn) {
+    navigator.clipboard.writeText(noiDung).then(() => {
+      btn.innerText = "✓ Đã sao chép";
+      btn.classList.add("copied");
+      setTimeout(() => {
+        btn.innerText = "Sao chép";
+        btn.classList.remove("copied");
+      }, 2000);
+    });
+  }
+
+  function goBack() {
+    window.history.back();
+  }
+</script>
+</body>
+</html>

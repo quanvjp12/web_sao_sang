@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Học viên - Trung tâm Sao Sáng</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <script>
+    // CẤU HÌNH SERVER
+    const NGROK_URL    = "https://ransack-shape-upstroke.ngrok-free.dev"; // Ghi chú
+    const API_BASE_URL = NGROK_URL;
+    const API          = NGROK_URL;
+
+    // Tự động gắn header bypass ngrok cho mọi request
+    const _fetch = window.fetch;
+    window.fetch = (url, opts = {}) => {
+      if (typeof url === "string" && url.startsWith(NGROK_URL)) {
+        opts.headers = { "ngrok-skip-browser-warning": "true", ...opts.headers };
+      }
+      return _fetch(url, opts);
+    };
+  </script>
+  <style>
+    body { background: #f4f6f9; font-family: system-ui, -apple-system, sans-serif; }
+    .sidebar {
+      position: fixed; top: 0; left: 0; width: 260px; height: 100vh;
+      background: linear-gradient(180deg, #111827, #1e3a8a);
+      color: white; padding: 25px 15px; z-index: 1000;
+    }
+    .sidebar-logo {
+      font-size: 1.15rem; font-weight: 800; text-align: center;
+      color: white; margin-bottom: 24px; padding-bottom: 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .sidebar-logo small { display: block; font-size: 0.7rem; font-weight: 400; opacity: 0.6; margin-top: 2px; }
+    .menu .btn-menu {
+      width: 100%; text-align: left; border: none; padding: 12px 15px;
+      margin-bottom: 8px; border-radius: 8px; background: rgba(255,255,255,0.05);
+      color: #9ca3af; font-weight: 600; transition: all 0.2s;
+    }
+    .menu .btn-menu:hover, .menu .btn-menu.active { background: #2563eb; color: white; }
+    .content { margin-left: 260px; padding: 30px; transition: all 0.3s; }
+    .card-box {
+      background: white; border-radius: 12px; padding: 20px;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+      border-left: 5px solid #2563eb; transition: transform 0.2s;
+    }
+    .card-box:hover { transform: translateY(-3px); }
+    .gv-info-banner {
+      background: white; border-radius: 12px; border: 1.5px solid #bfdbfe;
+      padding: 0; margin-bottom: 24px; overflow: hidden;
+      box-shadow: 0 4px 6px -1px rgba(37,99,235,0.05);
+    }
+    .gv-banner-header {
+      display: flex; align-items: center; gap: 14px;
+      padding: 16px 22px 12px; border-bottom: 1px solid #f1f5f9;
+    }
+    .gv-avatar {
+      width: 46px; height: 46px; border-radius: 50%;
+      background: linear-gradient(135deg, #1e3a8a, #2563eb); color: white;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 1.1rem; flex-shrink: 0;
+    }
+    .gv-banner-title-area { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .gv-banner-name { font-size: 1.1rem; font-weight: 700; color: #111827; margin: 0; }
+    .gv-banner-role { font-size: 0.8rem; color: #6b7280; margin: 2px 0 0; }
+    .gv-info-table { display: grid; grid-template-columns: 1fr 1fr; padding: 12px 22px 16px; gap: 0 32px; }
+    .gv-info-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 8px 0; border-bottom: 1px solid #f1f5f9; font-size: 0.88rem;
+    }
+    .gv-info-row:nth-last-child(-n+2) { border-bottom: none; }
+    .gv-info-key { color: #6b7280; }
+    .gv-info-val { font-weight: 600; color: #111827; }
+    .badge-dang-hoc {
+      font-size: 0.75rem; background: #dcfce7; color: #166534;
+      padding: 2px 10px; border-radius: 20px; font-weight: 600;
+    }
+
+    /* TOPBAR */
+    .topbar-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      background: white; border-radius: 12px; padding: 14px 24px;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-bottom: 24px;
+    }
+    .topbar-bar .greeting { flex: 1; }
+    .topbar-bar .greeting small { color: #6b7280; font-size: 0.82rem; display: block; margin-top: 2px; }
+    .greeting-name-row { display: flex; align-items: center; gap: 10px; }
+    .greeting-name-row h2 { margin: 0; font-size: 1.3rem; font-weight: 700; color: #111827; }
+
+    /* USER DROPDOWN */
+    .user-dropdown { position: relative; }
+    .user-btn {
+      display: flex; align-items: center; gap: 10px;
+      background: #f3f4f6; border: none; border-radius: 10px;
+      padding: 8px 14px; cursor: pointer; font-weight: 600; color: #111827;
+      transition: background 0.2s;
+    }
+    .user-btn:hover { background: #e5e7eb; }
+    .user-avatar {
+      width: 34px; height: 34px; border-radius: 50%;
+      background: linear-gradient(135deg, #1e3a8a, #2563eb);
+      color: white; display: flex; align-items: center;
+      justify-content: center; font-weight: 700; font-size: 0.85rem;
+    }
+    .user-caret { font-size: 0.7rem; color: #6b7280; transition: transform 0.2s; }
+    .user-btn.open .user-caret { transform: rotate(180deg); }
+    .dropdown-menu-custom {
+      display: none; position: absolute; right: 0; top: calc(100% + 8px);
+      background: white; border-radius: 12px; min-width: 200px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.12); z-index: 9999;
+      overflow: hidden; border: 1px solid #f3f4f6;
+    }
+    .dropdown-menu-custom.show { display: block; }
+    .dd-header { padding: 14px 16px 10px; border-bottom: 1px solid #f3f4f6; }
+    .dd-header .dd-name { font-weight: 700; color: #111827; font-size: 0.95rem; }
+    .dd-header .dd-role { font-size: 0.75rem; color: #6b7280; margin-top: 2px; }
+    .dd-item {
+      display: flex; align-items: center; gap: 10px; padding: 11px 16px;
+      cursor: pointer; color: #374151; font-size: 0.88rem;
+      border: none; background: none; width: 100%; text-align: left;
+      transition: background 0.15s;
+    }
+    .dd-item:hover { background: #f9fafb; }
+    .dd-item.danger { color: #dc2626; }
+    .dd-item.danger:hover { background: #fef2f2; }
+
+    /* HAMBURGER + RESPONSIVE */
+    .hamburger {
+      display: none; position: fixed; top: 14px; left: 14px;
+      z-index: 2000; background: #1e3a8a; border: none;
+      border-radius: 10px; padding: 10px 12px; cursor: pointer;
+      flex-direction: column; gap: 5px;
+    }
+    .hamburger span { display:block; width:22px; height:2px; background:white; border-radius:2px; transition:all 0.3s; }
+    .sidebar-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:999; }
+    .sidebar-overlay.show { display:block; }
+
+    @media (max-width: 768px) {
+      .hamburger { display: flex; }
+      .sidebar { position:fixed; top:0; left:-280px; width:260px; height:100vh; transition:left 0.3s ease; z-index:1000; overflow-y:auto; }
+      .sidebar.open { left: 0; }
+      .content { margin-left:0; padding:14px; padding-top:66px; }
+      .topbar-bar { flex-direction:column; align-items:flex-start; gap:8px; padding:14px 16px; }
+      .topbar-bar .greeting h2 { font-size:1.1rem; }
+      .row.g-3 .card-box { padding:14px; }
+      .table-responsive { overflow-x: auto; }
+    }
+
+    /* MODAL ĐỔI MẬT KHẨU */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.45); z-index: 10000;
+      align-items: center; justify-content: center;
+    }
+    .modal-overlay.show { display: flex; }
+    .modal-box {
+      background: white; border-radius: 18px; padding: 32px;
+      width: 100%; max-width: 420px; box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    }
+    .modal-box h5 { font-weight: 700; margin-bottom: 20px; font-size: 1.15rem; }
+    .modal-box .form-label { font-weight: 600; font-size: 0.85rem; color: #374151; }
+    .modal-box .form-control { border-radius: 10px; padding: 10px 14px; border: 1.5px solid #e5e7eb; }
+    .modal-box .form-control:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+    .modal-footer-btns { display: flex; gap: 10px; margin-top: 24px; }
+    .modal-footer-btns button { flex: 1; padding: 11px; border-radius: 10px; font-weight: 700; border: none; cursor: pointer; }
+    .btn-cancel { background: #f3f4f6; color: #374151; }
+    .btn-cancel:hover { background: #e5e7eb; }
+    .btn-submit { background: linear-gradient(135deg,#1e3a8a,#2563eb); color: white; }
+    .btn-submit:hover { opacity: 0.9; }
+    .msg-box { border-radius: 8px; padding: 10px 14px; font-size: 0.85rem; margin-top: 14px; display: none; }
+    .msg-box.success { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; display: block; }
+    .msg-box.error   { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; display: block; }
+  </style>
+</head>
+<body>
+
+  <button class="hamburger" onclick="toggleSidebar()">
+    <span></span><span></span><span></span>
+  </button>
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+  <div class="sidebar d-flex flex-column justify-content-between">
+    <div>
+      <div class="sidebar-logo">
+        ⭐ HỌC VIÊN
+        <small>Trung tâm giáo dục Sao Sáng</small>
+      </div>
+      <div class="menu">
+        <button class="btn-menu active" onclick="switchTab(this, loadTongQuan)">Tổng quan</button>
+        <button class="btn-menu" onclick="switchTab(this, loadDangKyLop)">Đăng ký lớp</button>
+        <button class="btn-menu" onclick="switchTab(this, loadLopHoc)">Lớp học</button>
+        <button class="btn-menu" onclick="switchTab(this, loadLichHoc)">Lịch học</button>
+        <button class="btn-menu" onclick="switchTab(this, loadDiem)">Điểm học tập</button>
+        <button class="btn-menu" onclick="switchTab(this, loadHocPhi)">Học phí</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="topbar-bar">
+      <div class="greeting">
+        <div class="greeting-name-row">
+          <h2>Xin chào, <span id="tenHocVien" class="text-dark fw-bold">...</span></h2>
+        </div>
+        <small>Hệ thống quản lý học viên trung tâm Sao Sáng</small>
+      </div>
+      <div class="user-dropdown">
+        <button class="user-btn" id="userBtn" onclick="toggleDropdown()">
+          <div class="user-avatar" id="userAvatar">?</div>
+          <span class="user-caret">▼</span>
+        </button>
+        <div class="dropdown-menu-custom" id="dropdownMenu">
+          <div class="dd-header">
+            <div class="dd-name" id="ddName">...</div>
+            <div class="dd-role">Học viên</div>
+          </div>
+          <button class="dd-item" onclick="moModalDoiMK()">Đổi mật khẩu</button>
+          <button class="dd-item danger" onclick="dangXuat()">Đăng xuất</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-overlay" id="modalDoiMK">
+      <div class="modal-box">
+        <h5>🔑 Đổi mật khẩu</h5>
+        <label class="form-label">Mật khẩu hiện tại</label>
+        <input type="password" class="form-control" id="mkCu" placeholder="Nhập mật khẩu hiện tại">
+        <label class="form-label">Mật khẩu mới</label>
+        <input type="password" class="form-control" id="mkMoi" placeholder="Nhập mật khẩu mới">
+        <label class="form-label">Xác nhận mật khẩu mới</label>
+        <input type="password" class="form-control" id="mkXacNhan" placeholder="Nhập lại mật khẩu mới">
+        <div class="msg-box" id="mkMsg"></div>
+        <div class="modal-footer-btns">
+          <button class="btn-cancel" onclick="dongModal()">Hủy</button>
+          <button class="btn-submit" onclick="doiMatKhau()">Xác nhận</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-3 mb-4" id="dashboardCards">
+      <div class="col-12 col-md-4">
+        <div class="card-box">
+          <div class="text-muted small fw-bold text-uppercase mb-2">Trạng thái</div>
+          <div id="trangThaiHoc" class="fs-4 fw-bold">---</div>
+        </div>
+      </div>
+      <div class="col-12 col-md-4">
+        <div class="card-box">
+          <div class="text-muted small fw-bold text-uppercase mb-2">Lớp đang học</div>
+          <div id="tongLop" class="fs-4 fw-bold text-dark">0</div>
+        </div>
+      </div>
+      <div class="col-12 col-md-4">
+        <div class="card-box">
+          <div class="text-muted small fw-bold text-uppercase mb-2">Số lớp học nợ học phí</div>
+          <div id="hocPhiNo" class="fs-4 fw-bold text-danger">0</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="gv-info-banner" id="gvInfoBanner" style="display:none;">
+      <div class="gv-banner-header">
+        <div class="gv-avatar" id="gvAvatar">?</div>
+        <div>
+          <p class="gv-banner-name" id="gvBannerName">...</p>
+          <p class="gv-banner-role">Học viên</p>
+        </div>
+      </div>
+      <div class="gv-info-table" id="gvInfoTable"></div>
+    </div>
+
+    <div class="p-4 bg-white rounded-3 shadow-sm">
+      <h4 id="title" class="fw-bold mb-3 text-secondary">Thông tin tổng quan</h4>
+      <div class="table-responsive">
+        <table class="table table-hover table-bordered align-middle border text-center m-0">
+          <thead class="table-dark" id="thead"></thead>
+          <tbody id="tbody">
+            <tr><td colspan="100%" class="text-muted py-4">Đang tải dữ liệu...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+<script>
+// Cấu hình tập trung để dễ quản lý khi deploy
+const user = JSON.parse(localStorage.getItem("user"));
+
+// ===== HAMBURGER MENU =====
+function toggleSidebar() {
+  document.querySelector(".sidebar").classList.toggle("open");
+  document.getElementById("sidebarOverlay").classList.toggle("show");
+}
+function closeSidebar() {
+  document.querySelector(".sidebar").classList.remove("open");
+  document.getElementById("sidebarOverlay").classList.remove("show");
+}
+document.querySelectorAll(".btn-menu").forEach(btn => {
+  btn.addEventListener("click", () => {
+    if (window.innerWidth <= 768) closeSidebar();
+  });
+});
+
+// Kiểm tra quyền truy cập
+if (!user || user.Role !== "hocvien") {
+  localStorage.removeItem("user");
+  window.location.href = "login.html";
+}
+
+// Khởi tạo thông tin cơ bản ngay lập tức
+document.getElementById("tenHocVien").innerText = user.Username || "Học viên";
+document.getElementById("ddName").innerText = user.Username || "...";
+document.getElementById("userAvatar").innerText = (user.Username || "H")[0].toUpperCase();
+
+// ======= DROPDOWN USER =======
+function toggleDropdown() {
+  const menu  = document.getElementById("dropdownMenu");
+  const btn   = document.getElementById("userBtn");
+  const isOpen = menu.classList.toggle("show");
+  btn.classList.toggle("open", isOpen);
+}
+document.addEventListener("click", function(e) {
+  const dd = document.querySelector(".user-dropdown");
+  if (dd && !dd.contains(e.target)) {
+    document.getElementById("dropdownMenu").classList.remove("show");
+    document.getElementById("userBtn").classList.remove("open");
+  }
+});
+
+// ======= MODAL ĐỔI MẬT KHẨU =======
+function moModalDoiMK() {
+  document.getElementById("dropdownMenu").classList.remove("show");
+  document.getElementById("userBtn").classList.remove("open");
+  document.getElementById("mkCu").value = "";
+  document.getElementById("mkMoi").value = "";
+  document.getElementById("mkXacNhan").value = "";
+  const msg = document.getElementById("mkMsg");
+  msg.className = "msg-box"; msg.innerText = "";
+  document.getElementById("modalDoiMK").classList.add("show");
+}
+function dongModal() {
+  document.getElementById("modalDoiMK").classList.remove("show");
+}
+document.getElementById("modalDoiMK").addEventListener("click", function(e) {
+  if (e.target === this) dongModal();
+});
+async function doiMatKhau() {
+  const cu      = document.getElementById("mkCu").value.trim();
+  const moi     = document.getElementById("mkMoi").value.trim();
+  const xacNhan = document.getElementById("mkXacNhan").value.trim();
+  const msg     = document.getElementById("mkMsg");
+  msg.className = "msg-box"; msg.innerText = "";
+  if (!cu || !moi || !xacNhan) {
+    msg.className = "msg-box error"; msg.innerText = "Vui lòng điền đầy đủ thông tin."; return;
+  }
+  if (moi !== xacNhan) {
+    msg.className = "msg-box error"; msg.innerText = "Mật khẩu mới không khớp."; return;
+  }
+  if (moi.length < 3) {
+    msg.className = "msg-box error"; msg.innerText = "Mật khẩu mới phải có ít nhất 3 ký tự."; return;
+  }
+  try {
+    const res = await fetch(`${API_BASE_URL}/doi-mat-khau`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: user.Username, matKhauCu: cu, matKhauMoi: moi })
+    });
+    const result = await res.json();
+    if (result.success) {
+      msg.className = "msg-box success"; msg.innerText = "✓ Đổi mật khẩu thành công! Vui lòng đăng nhập lại.";
+      setTimeout(() => { localStorage.removeItem("user"); window.location.href = "login.html"; }, 2000);
+    } else {
+      msg.className = "msg-box error"; msg.innerText = result.message;
+    }
+  } catch (err) {
+    msg.className = "msg-box error"; msg.innerText = "Lỗi kết nối. Vui lòng thử lại.";
+  }
+}
+
+// ================= SWITCH TAB =================
+function switchTab(button, loadFunction) {
+  document.querySelectorAll('.btn-menu').forEach(btn => btn.classList.remove('active'));
+  button.classList.add('active');
+
+  // Chỉ hiện dashboard cards khi ở tab Tổng quan
+  const isTongQuan = loadFunction === loadTongQuan;
+  document.getElementById("dashboardCards").style.display = isTongQuan ? "" : "none";
+  document.getElementById("gvInfoBanner").style.display = "none";
+
+  // Hiện/ẩn bảng dữ liệu
+  const tableBox = document.querySelector(".p-4.bg-white.rounded-3.shadow-sm");
+  if (tableBox) tableBox.style.display = isTongQuan ? "none" : "";
+
+  if (!isTongQuan) {
+    document.getElementById("tbody").innerHTML = `<tr><td colspan="100%" class="text-muted py-4"><div class="spinner-border spinner-border-sm text-primary me-2"></div>Đang tải...</td></tr>`;
+  }
+  loadFunction();
+}
+function dangXuat() {
+  localStorage.removeItem("user");
+  window.location.href = "login.html";
+}
+function formatDate(dateString) {
+  if (!dateString) return "-";
+  return new Date(dateString).toLocaleDateString("vi-VN");
+}
+function formatMoney(number) {
+  return Number(number || 0).toLocaleString("vi-VN");
+}
+
+// Load các thông số thẻ Dashboard một lần duy nhất lúc vào trang
+async function loadDashboardStats() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/hocvien/${user.MaHV}`);
+    if(!res.ok) return;
+    const [data] = await res.json();
+    document.getElementById("tenHocVien").innerText = data.TenHV;
+    document.getElementById("ddName").innerText = data.TenHV;
+    document.getElementById("userAvatar").innerText = (data.TenHV || "H").split(" ").slice(-1)[0][0].toUpperCase();
+    document.getElementById("tongLop").innerText = data.SoLopHoc || 0;
+    document.getElementById("hocPhiNo").innerText = formatMoney(data.HocPhiNo);
+    const badgeColors = { "Đang học": "bg-success-subtle text-success", "Bảo lưu": "bg-warning-subtle text-warning-emphasis" };
+    const badgeClass = badgeColors[data.TrangThai] || "bg-danger-subtle text-danger";
+    document.getElementById("trangThaiHoc").innerHTML = `<span class="badge ${badgeClass} px-3 py-2 rounded-pill fs-6">${data.TrangThai}</span>`;
+    return data;
+  } catch (err) {
+    console.error("Lỗi tải thông tin tổng quan:", err);
+  }
+}
+
+// ================= TỔNG QUAN =================
+async function loadTongQuan() {
+  // Ẩn bảng dữ liệu, chỉ hiện banner thông tin
+  const tableBox = document.querySelector(".p-4.bg-white.rounded-3.shadow-sm");
+  if (tableBox) tableBox.style.display = "none";
+  document.getElementById("title").innerText = "Thông tin chi tiết học viên";
+  document.getElementById("tbody").innerHTML = "";
+  document.getElementById("thead").innerHTML = "";
+
+  // Load dashboard stats (KPI cards)
+  const data = await loadDashboardStats();
+  if (!data) return;
+
+  // ===== BANNER THÔNG TIN HỌC VIÊN =====
+  try {
+    const resHV = await fetch(`${API_BASE_URL}/hocvien/${user.MaHV}`);
+    if (!resHV.ok) throw new Error("API lỗi");
+    const [hv] = await resHV.json();
+    const fmt = (val) => val || "—";
+    const fmtDate = (d) => {
+      if (!d) return "—";
+      const dt = new Date(d);
+      if (dt.getFullYear() <= 1900) return "—";
+      return dt.toLocaleDateString("vi-VN");
+    };
+
+    // Avatar initials (2 chữ cuối tên)
+    const initials = (hv.TenHV || "HV").split(" ").slice(-2).map(w => w[0]).join("").toUpperCase();
+    document.getElementById("gvAvatar").innerText = initials;
+    document.getElementById("gvBannerName").innerText = fmt(hv.TenHV);
+    const rows = [
+      { key: "Giới tính",  val: fmt(hv.GioiTinh) },
+      { key: "Ngày sinh",  val: fmtDate(hv.NgaySinh) },
+      { key: "Điện thoại", val: fmt(hv.DienThoai) },
+      { key: "Email",      val: fmt(hv.Email) },
+      { key: "Địa chỉ",    val: fmt(hv.DiaChi) },
+      { key: "Trạng thái", val: hv.TrangThai === "Đang học" ? `<span class="badge-dang-hoc">${hv.TrangThai}</span>` : fmt(hv.TrangThai) },
+      { key: "Tài khoản",  val: user.Username },
+      { key: "Ngày nhập học", val: fmtDate(hv.NgayNhapHoc) },
+    ];
+    document.getElementById("gvInfoTable").innerHTML = rows.map(r => `
+      <div class="gv-info-row">
+        <span class="gv-info-key">${r.key}</span>
+        <span class="gv-info-val">${r.val}</span>
+      </div>
+    `).join("");
+    document.getElementById("gvInfoBanner").style.display = "block";
+  } catch (e) {
+    console.log("Lỗi tải thông tin học viên:", e);
+  }
+}
+
+// ================= LỊCH HỌC =================
+async function loadLichHoc() {
+  document.getElementById("title").innerText = "Thời khóa biểu";
+  document.getElementById("thead").innerHTML = "";
+  document.getElementById("tbody").innerHTML = `<tr><td colspan="100%" class="p-0 border-0"><div id="tkbContainer" class="p-2"></div></td></tr>`;
+
+  // Dùng setTimeout để đảm bảo DOM đã render xong trước khi fetch
+  await new Promise(r => setTimeout(r, 0));
+  const container = document.getElementById("tkbContainer");
+  if (!container) return;
+  try {
+    const res = await fetch(`${API_BASE_URL}/hocvien-lichhoc/${user.MaHV}`);
+    if (!res.ok) {
+      container.innerHTML = `<div class="text-danger text-center py-4">Lỗi tải lịch học (${res.status}).</div>`;
+      return;
+    }
+    const data = await res.json();
+    const thuList = ["Thứ 2","Thứ 3","Thứ 4","Thứ 5","Thứ 6","Thứ 7","Chủ nhật"];
+    const thuShort = ["T2","T3","T4","T5","T6","T7","CN"];
+
+    // Nhóm theo thứ
+    const byThu = {};
+    thuList.forEach(t => byThu[t] = []);
+    data.forEach(item => {
+      if (byThu[item.ThuHoc] !== undefined) {
+        byThu[item.ThuHoc].push(item);
+      }
+    });
+
+    // Tìm thứ hôm nay
+    const thuMapToday = {0:"Chủ nhật",1:"Thứ 2",2:"Thứ 3",3:"Thứ 4",4:"Thứ 5",5:"Thứ 6",6:"Thứ 7"};
+    const homNay = thuMapToday[new Date().getDay()];
+    if (data.length === 0) {
+      document.getElementById("tkbContainer").innerHTML = `<div class="text-muted text-center py-4">Chưa có lịch học nào.</div>`;
+      return;
+    }
+
+    // Render bảng TKB
+    let html = `
+      <style>
+        .tkb-table { width:100%; border-collapse: collapse; font-size:0.88rem; }
+        .tkb-table th { background:#111827; color:white; padding:10px 8px; text-align:center; border:1px solid #374151; }
+        .tkb-table th.today-col { background:#2563eb; }
+        .tkb-table td { padding:8px 6px; border:1px solid #e5e7eb; vertical-align:top; text-align:center; min-width:90px; }
+        .tkb-table td.today-col { background:#eff6ff; }
+        .tkb-cell { background:#dbeafe; border-radius:8px; padding:6px 8px; margin-bottom:4px; }
+        .tkb-cell .tc-name { font-weight:700; color:#1e3a8a; font-size:0.82rem; }
+        .tkb-cell .tc-time { font-size:0.78rem; color:#2563eb; margin-top:2px; }
+        .tkb-cell .tc-gv { font-size:0.75rem; color:#6b7280; margin-top:1px; }
+        .today-badge { display:inline-block; background:#2563eb; color:white; border-radius:20px; font-size:0.65rem; padding:1px 7px; margin-left:4px; vertical-align:middle; }
+      </style>
+      <table class="tkb-table">
+        <thead><tr>
+    `;
+    thuList.forEach((thu, i) => {
+      const isToday = thu === homNay;
+      const hasCls = isToday ? ' today-col' : '';
+      const badge = isToday ? `<span class="today-badge">Hôm nay</span>` : '';
+      html += `<th class="${hasCls}">${thuShort[i]}${badge}</th>`;
+    });
+    html += `</tr></thead><tbody><tr>`;
+    thuList.forEach(thu => {
+      const isToday = thu === homNay;
+      const hasCls = isToday ? ' today-col' : '';
+      const items = byThu[thu];
+      if (items.length === 0) {
+        html += `<td class="${hasCls}"><span class="text-muted" style="font-size:0.8rem">—</span></td>`;
+      } else {
+        html += `<td class="${hasCls}">`;
+        items.forEach(item => {
+          const gioStart = item.GioBatDau || '';
+          const gioEnd   = item.GioKetThuc || '';
+          html += `
+            <div class="tkb-cell">
+              <div class="tc-name">${item.TenLop}</div>
+              <div class="tc-time">${gioStart} – ${gioEnd}</div>
+              <div class="tc-gv">Giáo viên: ${item.TenGV}</div>
+            </div>
+          `;
+        });
+        html += `</td>`;
+      }
+    });
+    html += `</tr></tbody></table>`;
+    document.getElementById("tkbContainer").innerHTML = html;
+  } catch(err) {
+    const c = document.getElementById("tkbContainer");
+    if (c) c.innerHTML = `<div class="text-danger text-center py-4">Lỗi tải lịch học.</div>`;
+    console.error(err);
+  }
+}
+
+// ================= ĐĂNG KÝ LỚP =================
+async function loadDangKyLop() {
+  document.getElementById("title").innerText = "Đăng ký lớp học";
+  document.getElementById("thead").innerHTML = "";
+  document.getElementById("tbody").innerHTML = `
+    <tr><td colspan="100%" class="p-0 border-0">
+      <div id="dkContainer" style="padding:4px"></div>
+    </td></tr>`;
+
+  await new Promise(r => setTimeout(r, 0));
+  const container = document.getElementById("dkContainer");
+  if (!container) return;
+  try {
+    const [resLop, resDangKy] = await Promise.all([
+      fetch(`${API_BASE_URL}/danhsach-lop`),
+      fetch(`${API_BASE_URL}/hocvien-dangky/${user.MaHV}`)
+    ]);
+    if (!resLop.ok || !resDangKy.ok) {
+      container.innerHTML = `<div class="text-danger text-center py-4">Lỗi tải dữ liệu.</div>`;
+      return;
+    }
+    const dsLop   = await resLop.json();
+    const dsDangKy = await resDangKy.json();
+
+    // Tập các MaLop học viên đã đăng ký
+    const daDangKy = new Set(dsDangKy.map(d => d.MaLop));
+
+    // Phân loại
+    const lopChua = dsLop.filter(l => !daDangKy.has(l.MaLop));
+    const lopDa   = dsDangKy;
+
+    // Render phần lớp đang đăng ký / đã duyệt
+    const daDkHtml = lopDa.length === 0 ? '' : `
+      <div style="margin-bottom:24px">
+        <div style="font-weight:700;font-size:0.95rem;color:#374151;margin-bottom:12px">
+          📋 Lớp đã đăng ký
+        </div>
+        ${lopDa.map(item => {
+          const cfg = {
+            'Đang học':   { bg:'#f0fdf4', border:'#22c55e', badge:'#dcfce7', color:'#15803d', text:'Đang học' },
+            'Chờ duyệt':  { bg:'#fffbeb', border:'#f59e0b', badge:'#fef3c7', color:'#b45309', text:'Chờ duyệt' },
+            'Từ chối':    { bg:'#fef2f2', border:'#ef4444', badge:'#fee2e2', color:'#dc2626', text:'Từ chối'   },
+          }[item.TrangThai] || { bg:'#f9fafb', border:'#d1d5db', badge:'#f3f4f6', color:'#6b7280', text: item.TrangThai };
+          return `
+            <div style="background:${cfg.bg};border-left:4px solid ${cfg.border};border-radius:12px;
+                        padding:14px 18px;margin-bottom:10px;display:flex;align-items:center;gap:12px">
+              <div style="flex:1">
+                <div style="font-weight:700;color:#111827">${item.TenLop}</div>
+                <div style="font-size:0.83rem;color:#6b7280;margin-top:3px">
+                  GV: ${item.TenGV} · Học phí: ${Number(item.HocPhi||0).toLocaleString('vi-VN')} ₫
+                </div>
+              </div>
+              <span style="background:${cfg.badge};color:${cfg.color};border-radius:20px;
+                           padding:4px 14px;font-size:0.8rem;font-weight:700;white-space:nowrap">
+                ${cfg.text}
+              </span>
+              ${item.TrangThai === 'Từ chối' ? `
+                <button onclick="dangKyLop(${item.MaLop}, this)"
+                  style="background:#2563eb;color:white;border:none;border-radius:8px;
+                         padding:6px 14px;font-size:0.82rem;font-weight:700;cursor:pointer">
+                  Đăng ký lại
+                </button>` : ''}
+            </div>`;
+        }).join('')}
+      </div>`;
+
+    // Render phần lớp chưa đăng ký
+    const chuaDkHtml = `
+      <div>
+        <div style="font-weight:700;font-size:0.95rem;color:#374151;margin-bottom:12px">
+          🏫 Lớp học có thể đăng ký
+        </div>
+        ${lopChua.length === 0
+          ? `<div style="color:#9ca3af;text-align:center;padding:20px">Không còn lớp nào để đăng ký.</div>`
+          : lopChua.map(item => {
+              const conCho = item.SoLuongToiDa ? `${item.SoHocVien}/${item.SoLuongToiDa} học viên` : `${item.SoHocVien} học viên`;
+              const day = item.NgayBatDau ? formatDate(item.NgayBatDau) : 'Chưa xác định';
+              return `
+                <div style="background:white;border:1.5px solid #e5e7eb;border-radius:12px;
+                            padding:16px 18px;margin-bottom:10px;display:flex;align-items:center;gap:14px;
+                            box-shadow:0 1px 4px rgba(0,0,0,0.05)">
+                  <div style="flex:1">
+                    <div style="font-weight:700;color:#111827;font-size:0.97rem">${item.TenLop}</div>
+                    <div style="font-size:0.82rem;color:#6b7280;margin-top:4px;display:flex;flex-wrap:wrap;gap:12px">
+                      <span>Giáo viên:  ${item.TenGV}</span>
+                      <span>Số học viên: ${conCho}</span>
+                      <span>Học phí: ${Number(item.HocPhi||0).toLocaleString('vi-VN')} ₫</span>
+                      <span>📅 Khai giảng: ${day}</span>
+                    </div>
+                  </div>
+                  <button id="btn-dk-${item.MaLop}" onclick="dangKyLop(${item.MaLop}, this)"
+                    style="background:linear-gradient(135deg,#1e3a8a,#2563eb);color:white;border:none;
+                           border-radius:9px;padding:9px 18px;font-weight:700;font-size:0.87rem;
+                           cursor:pointer;white-space:nowrap;transition:opacity .2s">
+                    Đăng ký
+                  </button>
+                </div>`;
+            }).join('')
+        }
+      </div>`;
+    document.getElementById("dkContainer").innerHTML = daDkHtml + chuaDkHtml;
+  } catch(err) {
+    const c = document.getElementById("dkContainer");
+    if (c) c.innerHTML = `<div style="color:#dc2626;text-align:center;padding:20px">Lỗi tải dữ liệu.</div>`;
+    console.error(err);
+  }
+}
+async function dangKyLop(MaLop, btn) {
+  btn.disabled = true;
+  btn.style.opacity = '0.6';
+  btn.innerText = 'Đang gửi...';
+  try {
+    const res = await fetch(`${API_BASE_URL}/dangky-lop`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ MaHV: user.MaHV, MaLop })
+    });
+    const result = await res.json();
+    if (result.success) {
+      loadDangKyLop(); // Reload lại toàn tab
+    } else {
+      alert(result.message || 'Đăng ký thất bại');
+      btn.disabled = false; btn.style.opacity = '1'; btn.innerText = 'Đăng ký';
+    }
+  } catch(err) {
+    alert('Lỗi kết nối.');
+    btn.disabled = false; btn.style.opacity = '1'; btn.innerText = 'Đăng ký';
+  }
+}
+
+// ================= LỚP HỌC =================
+async function loadLopHoc() {
+  document.getElementById("title").innerText = "Danh sách lớp học tham gia";
+  try {
+    const res = await fetch(`${API_BASE_URL}/hocvien-lophoc/${user.MaHV}`);
+    const data = await res.json();
+    document.getElementById("thead").innerHTML = `<tr><th>Tên lớp</th><th>Giảng viên</th><th>Ngày bắt đầu</th><th>Ngày kết thúc</th></tr>`;
+    if(data.length === 0) {
+      document.getElementById("tbody").innerHTML = `<tr><td colspan="4" class="text-muted">Chưa tham gia lớp học nào.</td></tr>`;
+      return;
+    }
+    document.getElementById("tbody").innerHTML = data.map(item => `
+      <tr>
+        <td class="fw-bold text-primary">${item.TenLop}</td>
+        <td>${item.TenGV}</td>
+        <td>${formatDate(item.NgayBatDau)}</td>
+        <td>${formatDate(item.NgayKetThuc)}</td>
+      </tr>
+    `).join('');
+  } catch(err) { }
+}
+
+// ================= ĐIỂM =================
+async function loadDiem() {
+  document.getElementById("title").innerText = "Kết quả học tập";
+  try {
+    const res = await fetch(`${API_BASE_URL}/hocvien-diem/${user.MaHV}`);
+    const data = await res.json();
+    document.getElementById("thead").innerHTML = `<tr><th>Tên lớp</th><th>TX1</th><th>TX2</th><th>Giữa kỳ</th><th>Cuối kỳ</th><th>Tổng kết</th><th>Nhận xét</th></tr>`;
+    if(data.length === 0) {
+      document.getElementById("tbody").innerHTML = `<tr><td colspan="7" class="text-muted">Chưa có dữ liệu điểm.</td></tr>`;
+      return;
+    }
+    document.getElementById("tbody").innerHTML = data.map(item => `
+      <tr>
+        <td class="text-start ps-3 fw-bold">${item.TenLop}</td>
+        <td>${item.DiemThuongXuyen1 ?? '-'}</td>
+        <td>${item.DiemThuongXuyen2 ?? '-'}</td>
+        <td>${item.DiemGiuaKy ?? '-'}</td>
+        <td>${item.DiemCuoiKy ?? '-'}</td>
+        <td class="text-danger fw-bold">${item.DiemTongKet ? Number(item.DiemTongKet).toFixed(2) : '-'}</td>
+        <td class="text-start" style="font-style:${item.NhanXet ? 'normal' : 'italic'};color:${item.NhanXet ? '#374151' : '#9ca3af'}">
+          ${item.NhanXet || 'Chưa có nhận xét'}
+        </td>
+      </tr>
+    `).join('');
+  } catch(err) { }
+}
+
+// ================= HỌC PHÍ =================
+async function loadHocPhi() {
+  document.getElementById("title").innerText = "Theo dõi học phí các khóa học";
+  try {
+    const res = await fetch(`${API_BASE_URL}/hocvien-hocphi/${user.MaHV}`);
+    const data = await res.json();
+    document.getElementById("thead").innerHTML = `<tr><th>Tên lớp</th><th>Học phí</th><th>Tình trạng</th><th>Ngày thanh toán</th><th>Thao tác</th></tr>`;
+    if(data.length === 0) {
+      document.getElementById("tbody").innerHTML = `<tr><td colspan="5" class="text-muted">Chưa có bản ghi học phí.</td></tr>`;
+      return;
+    }
+    renderHocPhi(data);
+  } catch(err) { console.error(err); }
+}
+function renderHocPhi(data) {
+  document.getElementById("tbody").innerHTML = data.map(item => {
+    const daDong = item.TrangThai === 'Đã đóng';
+    const statusClass = daDong ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger';
+    const btnHtml = daDong ? `<span class="text-muted small">—</span>` : `<button class="btn btn-sm btn-primary px-3" onclick="moThanhToan(${item.MaLop}, '${item.TenLop}', ${item.SoTien})">Đóng học phí</button>`;
+    return `
+      <tr id="row-lop-${item.MaLop}">
+        <td class="text-start ps-3">${item.TenLop}</td>
+        <td class="fw-bold">${formatMoney(item.SoTien)}</td>
+        <td><span class="badge ${statusClass} px-3 py-2 rounded-pill" id="badge-${item.MaLop}">${item.TrangThai}</span></td>
+        <td id="ngay-${item.MaLop}">${formatDate(item.NgayDong)}</td>
+        <td id="btn-${item.MaLop}">${btnHtml}</td>
+      </tr>
+    `;
+  }).join('');
+}
+function moThanhToan(MaLop, TenLop, SoTien) {
+  const tenHV = encodeURIComponent(user.Username || "");
+  const tenLop = encodeURIComponent(TenLop);
+  const url = `thanhtoan.html?ten=${tenHV}&lop=${tenLop}&sotien=${SoTien}&malop=${MaLop}&mahv=${user.MaHV}`;
+  window.location.href = url;
+}
+async function dongHocPhi(MaLop, btn) {
+  if (!confirm("Xác nhận đóng học phí cho lớp này?")) return;
+  const spinner = btn.querySelector('.spinner-border');
+  spinner.classList.remove('d-none');
+  btn.disabled = true;
+  try {
+    const res = await fetch(`${API_BASE_URL}/hocvien-donghocphi/${user.MaHV}/${MaLop}`, {
+      method: 'PUT'
+    });
+    const result = await res.json();
+    if (result.success) {
+      document.getElementById(`badge-${MaLop}`).className = 'badge bg-success-subtle text-success px-3 py-2 rounded-pill';
+      document.getElementById(`badge-${MaLop}`).innerText = 'Đã đóng';
+      document.getElementById(`ngay-${MaLop}`).innerText = new Date().toLocaleDateString('vi-VN');
+      document.getElementById(`btn-${MaLop}`).innerHTML = `<span class="text-muted small">—</span>`;
+      loadDashboardStats();
+    } else {
+      alert("Lỗi: " + result.message);
+      spinner.classList.add('d-none');
+      btn.disabled = false;
+    }
+  } catch (err) {
+    alert("Có lỗi xảy ra, vui lòng thử lại.");
+    spinner.classList.add('d-none');
+    btn.disabled = false;
+  }
+}
+
+// Tự động kích hoạt khi trang sẵn sàng
+window.onload = function() {
+  loadTongQuan();
+}
+</script>
+</body>
+</html>
